@@ -1,0 +1,37 @@
+name: tfsec
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  tfsec:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install tfsec
+        run: |
+          curl -s https://raw.githubusercontent.com/aquasecurity/tfsec/master/scripts/install_linux.sh | bash
+
+      - name: Run tfsec
+        run: |
+          tfsec --out tfsec.sarif --format sarif .
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: tfsec.sarif
+
+      - name: PR commenter
+        uses: tfsec/tfsec-pr-commenter-action@v1.3.1
+        if: github.event_name == 'pull_request'
+        with:
+          GITHUB_TOKEN: ${{ github.token }}
